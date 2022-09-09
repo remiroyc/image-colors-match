@@ -1,6 +1,13 @@
 const spawn = require("child_process").spawn;
 
-export function extractColorPalette(path: string) {
+export function extractColorPalette(path: string): Promise<
+  {
+    percent: number;
+    pixels: number;
+    rgba: number[];
+    hex: string;
+  }[]
+> {
   return new Promise((resolve, reject) => {
     var convert = spawn("convert", [
         path,
@@ -60,10 +67,12 @@ export function extractColorPalette(path: string) {
 export function parseImagickColors(colorStr: string) {
   const { rows, totalPixels } = colorStr.split("\n").reduce<{
     totalPixels: number;
-    rows: { pixels: number; rgba: string; hex: string }[];
+    rows: { pixels: number; rgba: number[]; hex: string }[];
   }>(
     (acc, str) => {
       if (str) {
+        console.log("str", str);
+
         const [countStr, rgba, hex] = str
           .trim()
           .replace(/([(]) |(,) |:( )/g, "$1$2$3")
@@ -78,7 +87,11 @@ export function parseImagickColors(colorStr: string) {
               ...acc.rows,
               {
                 pixels: count,
-                rgba,
+                rgba: rgba
+                  .replace("(", "")
+                  .replace(")", "")
+                  .split(",")
+                  .map((nb) => parseFloat(nb)),
                 hex,
               },
             ],
